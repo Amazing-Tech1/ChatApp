@@ -1,0 +1,22 @@
+{
+  "name": "ChatApp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "pnpm install --prefix backend && pnpm install --prefix frontend && cd backend && pnpm build && cd ../frontend && pnpm build",
+    "start": "pnpm start --prefix backend"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.9.1",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.9.1",
+  "type": "module"
+}
