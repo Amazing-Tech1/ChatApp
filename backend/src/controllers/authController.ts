@@ -3,6 +3,8 @@ import connectDB from "../lib/db.js";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { generateToken } from "../lib/utils.js";
+import { sendWelcomeEmail } from "../emails/emailhandler.js";
+import "dotenv/config";
 
 interface SignUpBody {
   name: string;
@@ -56,7 +58,13 @@ export async function signUp(req: Request<{}, {}, SignUpBody>, res: Response) {
           image_url: newUser.image_url,
         },
       });
-      //To do: send a local mail to user
+
+      //send user a welcome email
+      try {
+        await sendWelcomeEmail(newUser.name, newUser.email, process.env.CLIENT_URL as string);
+      } catch (error) {
+        console.error("Error sending welcome email:", error);
+      }
     } else {
       res.status(400).json({
         status: false,
