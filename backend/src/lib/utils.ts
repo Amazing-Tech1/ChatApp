@@ -40,7 +40,6 @@ export async function generateTokens(userId: Types.ObjectId, res: Response) {
     httpOnly: true,
     secure: NODE_ENV === "production",
     sameSite: "strict" as const,
-    path: "/",
   };
 
   res.cookie("accessToken", accessToken, {
