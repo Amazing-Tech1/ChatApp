@@ -12,6 +12,11 @@ interface SignUpBody {
   password: string;
 }
 
+interface LoginBody {
+  email: string;
+  password: string;
+}
+
 export async function signUp(req: Request<{}, {}, SignUpBody>, res: Response) {
   const { name, email, password } = req.body;
   if (!name || !email || !password) {
@@ -76,6 +81,69 @@ export async function signUp(req: Request<{}, {}, SignUpBody>, res: Response) {
     res.status(500).json({
       status: false,
       message: error,
+    });
+  }
+}
+
+export async function logIn(req: Request<{}, {}, LoginBody>, res: Response) {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ status: false, message: "All fields required" });
+  }
+  try {
+    await connectDB();
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid email or password",
+      });
+    } else {
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(400).json({
+          status: false,
+          message: "Invalid email or password",
+        });
+      }
+    }
+    generateToken(user._id, res);
+    return res.status(200).json({
+      status: true,
+      message: "Login successful",
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        image_url: user.image_url,
+      },
+    });
+  } catch (error) {
+    console.error("Error during login:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Internal server error",
+    });
+  }
+}
+export function logOut(_req: Request, res: Response): void {
+  try {
+    res.clearCookie("jwt", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error: any) {
+    console.error("Logout error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "An unexpected error occurred during logout.",
     });
   }
 }
