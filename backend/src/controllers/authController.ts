@@ -52,7 +52,7 @@ export async function signUp(req: Request<{}, {}, SignUpBody>, res: Response) {
     });
     if (newUser) {
       await newUser.save();
-      generateTokens(newUser._id, res);
+      await generateTokens(newUser._id, res);
 
       res.status(201).json({
         status: true,
@@ -108,7 +108,7 @@ export async function logIn(req: Request<{}, {}, LoginBody>, res: Response) {
         });
       }
     }
-    generateTokens(user._id, res);
+    await generateTokens(user._id, res);
     return res.status(200).json({
       status: true,
       message: "Login successful",
