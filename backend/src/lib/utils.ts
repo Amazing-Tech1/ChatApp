@@ -1,24 +1,54 @@
 import jwt from "jsonwebtoken";
-import "dotenv/config";
-import { Types } from "mongoose";
+import { randomUUID } from "crypto";
 import type { Response } from "express";
+import type { Types } from "mongoose";
+import User from "../models/User.js";
 
-export function generateToken(userId: Types.ObjectId, res: Response) {
-  const { JWT_SECRET, NODE_ENV } = process.env;
-  if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET is not defined");
+export async function generateTokens(userId: Types.ObjectId, res: Response) {
+  const { JWT_SECRET, JWT_REFRESH_SECRET, NODE_ENV } = process.env;
+
+  if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
+    throw new Error("JWT secrets are not configured");
   }
 
-  const token = jwt.sign({ userId: userId.toString() }, JWT_SECRET, {
-    expiresIn: "7d",
+  const jti = randomUUID();
+
+  const refreshToken = jwt.sign(
+    {
+      userId: userId.toString(),
+      type: "refresh",
+      jti,
+    },
+    JWT_REFRESH_SECRET,
+    { expiresIn: "7d" },
+  );
+
+  const accessToken = jwt.sign(
+    {
+      userId: userId.toString(),
+      type: "access",
+    },
+    JWT_SECRET,
+    { expiresIn: "15m" },
+  );
+
+  await User.findByIdAndUpdate(userId, {
+    refreshTokenId: jti,
   });
 
-  res.cookie("jwt", token, {
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+  const cookieOptions = {
     httpOnly: true,
-    sameSite: "strict",
-    secure: NODE_ENV !== "development",
+    secure: NODE_ENV === "production",
+    sameSite: "strict" as const,
+  };
+
+  res.cookie("accessToken", accessToken, {
+    ...cookieOptions,
+    maxAge: 15 * 60 * 1000,
   });
 
-  return token;
+  res.cookie("refreshToken", refreshToken, {
+    ...cookieOptions,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 }
