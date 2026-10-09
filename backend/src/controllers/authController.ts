@@ -1,8 +1,9 @@
 import type { Request, Response } from "express";
 import connectDB from "../lib/db.js";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import { generateToken } from "../lib/utils.js";
+import { generateTokens } from "../lib/utils.js";
 import { sendWelcomeEmail } from "../emails/emailhandler.js";
 import "dotenv/config";
 
@@ -51,7 +52,7 @@ export async function signUp(req: Request<{}, {}, SignUpBody>, res: Response) {
     });
     if (newUser) {
       await newUser.save();
-      generateToken(newUser._id, res);
+      generateTokens(newUser._id, res);
 
       res.status(201).json({
         status: true,
@@ -107,7 +108,7 @@ export async function logIn(req: Request<{}, {}, LoginBody>, res: Response) {
         });
       }
     }
-    generateToken(user._id, res);
+    generateTokens(user._id, res);
     return res.status(200).json({
       status: true,
       message: "Login successful",
@@ -126,24 +127,126 @@ export async function logIn(req: Request<{}, {}, LoginBody>, res: Response) {
     });
   }
 }
-export function logOut(_req: Request, res: Response): void {
+
+export async function logOut(req: Request, res: Response): Promise<void> {
   try {
-    res.clearCookie("jwt", {
+    const token = req.cookies?.refreshToken;
+
+    if (token && process.env.JWT_REFRESH_SECRET) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET) as {
+          userId: string;
+          type: string;
+          jti: string;
+        };
+
+        if (decoded.type === "refresh" && decoded.jti) {
+          await User.findOneAndUpdate(
+            {
+              _id: decoded.userId,
+              refreshTokenId: decoded.jti,
+            },
+            {
+              $set: { refreshTokenId: null },
+            },
+          );
+        }
+      } catch (error) {
+        console.error("Error verifying refresh token during logout:", error);
+      }
+    }
+
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+      sameSite: "strict" as const,
+      path: "/",
+    };
+
+    res.clearCookie("accessToken", cookieOptions);
+    res.clearCookie("refreshToken", cookieOptions);
 
     res.status(200).json({
       success: true,
       message: "Logged out successfully",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Logout error:", error);
 
     res.status(500).json({
       success: false,
       message: "An unexpected error occurred during logout.",
+    });
+  }
+}
+
+export function updateProfile(req: Request, res: Response): void {}
+
+export async function refreshToken(req: Request, res: Response): Promise<void> {
+  const token = req.cookies?.refreshToken;
+  const { JWT_SECRET, JWT_REFRESH_SECRET, NODE_ENV } = process.env;
+
+  if (!token) {
+    res.status(401).json({
+      status: false,
+      message: "Refresh token missing. Please log in again.",
+    });
+    return;
+  }
+
+  if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
+    res.status(500).json({
+      status: false,
+      message: "Internal server error",
+    });
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_REFRESH_SECRET) as {
+      userId: string;
+      type: string;
+      jti: string;
+    };
+    if (!decoded || !decoded.userId) {
+      res.status(401).json({
+        status: false,
+        message: "Invalid refresh token. Please log in again.",
+      });
+      return;
+    }
+
+    const user = await User.findById(decoded.userId);
+
+    if (!user || user.refreshTokenId !== decoded.jti) {
+      res.status(401).json({
+        status: false,
+        message: "Refresh token is invalid or revoked. Please log in again.",
+      });
+      return;
+    }
+    // Generate a new access token.
+    const accessToken = jwt.sign({ userId: user._id.toString(), type: "access" }, JWT_SECRET, {
+      expiresIn: "15m",
+    });
+
+    res.cookie("accessToken", accessToken, {
+      maxAge: 15 * 60 * 1000,
+      httpOnly: true,
+      secure: NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    res.status(200).json({
+      status: true,
+      message: "Access token refreshed successfully",
+    });
+  } catch (error) {
+    console.error("Refresh token error:", error);
+
+    res.status(500).json({
+      status: false,
+      message: "Internal server error",
     });
   }
 }

@@ -5,6 +5,7 @@ interface IUser {
   name: string;
   password: string;
   image_url: string;
+  refreshTokenId?: string | null;
 }
 
 const userSchema = new mongoose.Schema<IUser>(
@@ -26,6 +27,10 @@ const userSchema = new mongoose.Schema<IUser>(
     image_url: {
       type: String,
       default: "",
+    },
+    refreshTokenId: {
+      type: String,
+      default: null,
     },
   },
   { timestamps: true },
