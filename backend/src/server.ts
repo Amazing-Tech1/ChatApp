@@ -3,6 +3,7 @@ import "dotenv/config";
 import authRoutes from "./routes/auth.js";
 import msgRoutes from "./routes/msg.js";
 import path from "path";
+import connectDB from "./lib/db.js";
 
 const app = express();
 app.use(express.json());
@@ -16,8 +17,11 @@ app.use("/api/messages", msgRoutes);
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
-  app.get("/{*splat}", (req, res) => {
+  app.get("/{*splat}", (_, res) => {
     res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
   });
 }
-app.listen(PORT, () => console.log(`server running on ${PORT}`));
+app.listen(PORT, () => {
+  connectDB();
+  console.log(`server running on ${PORT}`);
+});
