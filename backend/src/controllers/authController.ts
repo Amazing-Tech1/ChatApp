@@ -1,0 +1,73 @@
+import type { Request, Response } from "express";
+import connectDB from "../lib/db.js";
+import bcrypt from "bcryptjs";
+import User from "../models/User.js";
+import { generateToken } from "../lib/utils.js";
+
+interface SignUpBody {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export async function signUp(req: Request<{}, {}, SignUpBody>, res: Response) {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ status: false, message: "All fields required" });
+  }
+  if (password.length < 6) {
+    return res
+      .status(400)
+      .json({ status: false, message: "password must be at least 6 characters" });
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({
+      status: false,
+      message: "Please provide a valid email address",
+    });
+  }
+  try {
+    await connectDB();
+    const user = await User.findOne({ email });
+    if (user) {
+      return res.status(400).json({
+        status: false,
+        message: "Email already exists!",
+      });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      name,
+      email,
+      password: hashedPassword,
+    });
+    if (newUser) {
+      generateToken(newUser._id, res);
+      await newUser.save();
+      res.status(201).json({
+        status: true,
+        message: "Account created successfully",
+        data: {
+          _id: newUser._id,
+          name: newUser.name,
+          email: newUser.email,
+          image_url: newUser.image_url,
+        },
+      });
+//To do: send a local mail to user
+
+    } else {
+      res.status(400).json({
+        status: false,
+        message: "Invalid user Data!",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      status: false,
+      message: error,
+    });
+  }
+}
