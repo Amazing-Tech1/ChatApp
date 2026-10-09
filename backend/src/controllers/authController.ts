@@ -43,8 +43,9 @@ export async function signUp(req: Request<{}, {}, SignUpBody>, res: Response) {
       password: hashedPassword,
     });
     if (newUser) {
-      generateToken(newUser._id, res);
       await newUser.save();
+      generateToken(newUser._id, res);
+
       res.status(201).json({
         status: true,
         message: "Account created successfully",
@@ -55,8 +56,7 @@ export async function signUp(req: Request<{}, {}, SignUpBody>, res: Response) {
           image_url: newUser.image_url,
         },
       });
-//To do: send a local mail to user
-
+      //To do: send a local mail to user
     } else {
       res.status(400).json({
         status: false,

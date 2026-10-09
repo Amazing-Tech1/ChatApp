@@ -4,7 +4,12 @@ import { Types } from "mongoose";
 import type { Response } from "express";
 
 export function generateToken(userId: Types.ObjectId, res: Response) {
-  const token = jwt.sign({ userId: userId.toString() }, process.env.JWT_SECRET as string, {
+  const { JWT_SECRET, NODE_ENV } = process.env;
+  if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET is not defined");
+  }
+
+  const token = jwt.sign({ userId: userId.toString() }, JWT_SECRET, {
     expiresIn: "7d",
   });
 
@@ -12,7 +17,7 @@ export function generateToken(userId: Types.ObjectId, res: Response) {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
     sameSite: "strict",
-    secure: process.env.NODE_ENV !== "development",
+    secure: NODE_ENV !== "development",
   });
 
   return token;
