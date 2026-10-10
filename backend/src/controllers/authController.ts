@@ -6,6 +6,7 @@ import User from "../models/User.js";
 import { generateTokens } from "../lib/utils.js";
 import { sendWelcomeEmail } from "../emails/emailhandler.js";
 import "dotenv/config";
+import cloudinary from "../lib/cloudinary.js";
 
 interface SignUpBody {
   name: string;
@@ -160,7 +161,6 @@ export async function logOut(req: Request, res: Response): Promise<void> {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict" as const,
-      path: "/",
     };
 
     res.clearCookie("accessToken", cookieOptions);
@@ -179,8 +179,6 @@ export async function logOut(req: Request, res: Response): Promise<void> {
     });
   }
 }
-
-export function updateProfile(req: Request, res: Response): void {}
 
 export async function refreshToken(req: Request, res: Response): Promise<void> {
   const token = req.cookies?.refreshToken;
@@ -228,10 +226,12 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
     // Generate a new access token.
     const accessToken = jwt.sign({ userId: user._id.toString(), type: "access" }, JWT_SECRET, {
       expiresIn: "15m",
+      // expiresIn: "5s",
     });
 
     res.cookie("accessToken", accessToken, {
       maxAge: 15 * 60 * 1000,
+      // maxAge: 5 * 1000,
       httpOnly: true,
       secure: NODE_ENV === "production",
       sameSite: "strict",
@@ -247,6 +247,43 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
     res.status(500).json({
       status: false,
       message: "Internal server error",
+    });
+  }
+}
+
+export async function updateProfile(req: Request, res: Response): Promise<void> {
+  try {
+    const { profilePic } = req.body;
+    if (!profilePic) {
+      res.status(400).json({
+        status: false,
+        message: "Profile Picture is required",
+      });
+    }
+    if (!req.user) {
+      res.status(401).json({
+        status: false,
+        message: "Unauthorized user found!",
+      });
+      return;
+    }
+    const userId = req.user._id;
+    const uploadImg = await cloudinary.uploader.upload(profilePic);
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { profilePic: uploadImg.secure_url },
+      { new: true },
+    ).select(["-password", "-refreshTokenId"]); // Exclude the password and refreshTokenId fields from the updated user object
+    res.status(200).json({
+      status: true,
+      message: "Profile picture updated successfully",
+      data: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error uploading profile picture:", error);
+    res.status(500).json({
+      status: false,
+      message: "An error occurred while uploading the profile picture.",
     });
   }
 }

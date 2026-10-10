@@ -7,7 +7,7 @@ import connectDB from "./lib/db.js";
 import cookieParser from "cookie-parser";
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
 const __dirname = path.resolve();
 const PORT = Number(process.env.PORT) || 3000;

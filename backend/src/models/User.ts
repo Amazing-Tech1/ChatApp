@@ -1,12 +1,5 @@
 import mongoose, { type Model } from "mongoose";
-
-interface IUser {
-  email: string;
-  name: string;
-  password: string;
-  image_url: string;
-  refreshTokenId?: string | null;
-}
+import type { IUser } from "../types/express.js";
 
 const userSchema = new mongoose.Schema<IUser>(
   {

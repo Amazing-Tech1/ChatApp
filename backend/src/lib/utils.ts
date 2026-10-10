@@ -44,11 +44,13 @@ export async function generateTokens(userId: Types.ObjectId, res: Response) {
 
   res.cookie("accessToken", accessToken, {
     ...cookieOptions,
+    // maxAge: 5 * 1000,
     maxAge: 15 * 60 * 1000,
   });
 
   res.cookie("refreshToken", refreshToken, {
     ...cookieOptions,
+    // maxAge: 60 * 1000,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
