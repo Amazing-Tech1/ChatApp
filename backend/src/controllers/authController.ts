@@ -273,7 +273,7 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
       userId,
       { profilePic: uploadImg.secure_url },
       { new: true },
-    );
+    ).select(["-password", "-refreshTokenId"]); // Exclude the password and refreshTokenId fields from the updated user object
     res.status(200).json({
       status: true,
       message: "Profile picture updated successfully",
