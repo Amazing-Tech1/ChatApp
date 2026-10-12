@@ -33,7 +33,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const res = await axiosInstance.get("/auth/protected");
 
       set({
-        authUser: res.data,
+        authUser: res.data.user,
         isLoading: false,
       });
     } catch (error) {
@@ -54,8 +54,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       const res = await axiosInstance.post("/auth/signup", data);
 
       set({
-        authUser: res.data,
+        authUser: res.data.data,
       });
+
+      console.log(res.data.data);
       toast.success("Account created successfully ");
     } catch (error: any) {
       console.log(error?.response?.data?.message);

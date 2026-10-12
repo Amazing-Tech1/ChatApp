@@ -29,7 +29,7 @@ axiosInstance.interceptors.response.use(
 
     try {
       // Refresh runs in the background without reloading the page.
-      await axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+      await axios.post(`${BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
 
       // Retry the original request with the updated cookie.
       return axiosInstance(originalRequest);
