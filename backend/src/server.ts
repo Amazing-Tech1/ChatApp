@@ -10,7 +10,7 @@ import { aj } from "./lib/arcjet.js";
 import { corsOptions } from "./utils/corsOption.js";
 
 const app = express();
-app.use(express.json({ limit: "5mb" }));
+app.use(express.json({ limit: "6mb" }));
 app.use(cors(corsOptions));
 app.use(cookieParser());
 

@@ -7,6 +7,7 @@ import {
   refreshToken,
 } from "../controllers/authController.js";
 import { protectedRoute } from "../middleware/auth.js";
+import upload from "../middleware/upload.js";
 
 const router: Router = express.Router();
 
@@ -16,7 +17,7 @@ router.post("/logout", logOut);
 
 router.post("/refresh-token", refreshToken);
 
-router.put("/update-profile", protectedRoute, updateProfile);
+router.put("/update-profile", protectedRoute, upload.single("profilePic"), updateProfile);
 
 router.get("/protected", protectedRoute, (req, res) => {
   res.status(200).json({

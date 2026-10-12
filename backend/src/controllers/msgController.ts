@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import User from "../models/User.js";
 import Message from "../models/Message.js";
-import { uploadImage } from "../utils/imageUpload.js";
+import cloudinary from "../lib/cloudinary.js";
 
 export async function getAllContacts(req: Request, res: Response): Promise<void> {
   if (!req.user) {
@@ -103,8 +103,9 @@ export async function getChatWithUser(req: Request, res: Response): Promise<void
 }
 
 export async function sendMessage(req: Request, res: Response): Promise<void> {
-  const { text, image } = req.body;
+  const { text } = req.body;
   const { id } = req.params;
+
   try {
     if (!req.user) {
       res.status(401).json({
@@ -113,49 +114,69 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
       });
       return;
     }
-    const senderId = req.user._id;
 
-    if (!text && !image) {
-      res.status(400).json({ success: false, message: "Text or Image is required" });
+    const senderId = req.user._id;
+    const file = req.file;
+
+    if (!text?.trim() && !file) {
+      res.status(400).json({
+        status: false,
+        message: "Text or image is required.",
+      });
       return;
     }
+
     if (senderId.equals(id)) {
-      res.status(400).json({ success: false, message: "You cannot send message to yourself" });
+      res.status(400).json({
+        status: false,
+        message: "You cannot send a message to yourself.",
+      });
       return;
     }
 
     const receiverExists = await User.exists({ _id: id });
+
     if (!receiverExists) {
-      res.status(404).json({ success: false, message: "Receiver not found!" });
+      res.status(404).json({
+        status: false,
+        message: "Receiver not found.",
+      });
       return;
     }
 
-    let imageUrl: string | undefined = undefined;
+    let imageUrl: string | undefined;
 
-    if (image) {
-      const uploadedImage = await uploadImage(image, "message");
-      imageUrl = uploadedImage.secure_url;
+    if (file) {
+      const result = await cloudinary.uploader.upload(
+        `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+        {
+          folder: "chatapp/messages",
+          resource_type: "image",
+        },
+      );
+
+      imageUrl = result.secure_url;
     }
+
     const newMessage = new Message({
       senderId,
       receiverId: id,
-      text,
+      text: text?.trim() || "",
       image: imageUrl,
     });
-    await newMessage.save();
 
-    //todo: send message in real time if user is online --socket.io
+    await newMessage.save();
 
     res.status(201).json({
       status: true,
       data: newMessage,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error while sending message:", error);
 
     res.status(500).json({
       status: false,
-      message: "Internal server error",
+      message: "Internal server error.",
     });
   }
 }

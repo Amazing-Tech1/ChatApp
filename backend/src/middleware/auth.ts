@@ -30,10 +30,17 @@ export async function protectedRoute(req: Request, res: Response, next: NextFunc
     req.user = user; // Attach the user object to the request for further use in the route handler
     next();
   } catch (error) {
-    console.log("Protected MiddleWare Error:", error);
-    return res.status(500).json({
+    if (error instanceof jwt.TokenExpiredError) {
+      console.error("Access token expired");
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      console.error("JWT verification failed:", error.message);
+    } else {
+      console.error("Protected middleware error:", error);
+    }
+
+    res.status(401).json({
       status: false,
-      message: "Internal Server Error: Unable to verify access token",
+      message: "Invalid or expired access token",
     });
   }
 }
