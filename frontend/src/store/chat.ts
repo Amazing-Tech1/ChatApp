@@ -58,7 +58,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     try {
       const res = await axiosInstance.get("/messages/contacts");
-      set({ allContacts: res.data.data });
+      set({ allContacts: res.data.users });
     } catch (error: any) {
       const message = error instanceof Error ? error.message : "Unable to fetch contacts.";
 
@@ -74,7 +74,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     try {
       const res = await axiosInstance.get("/messages/chats");
-      set({ chats: res.data.data });
+      set({ chats: res.data.chats });
     } catch (error: any) {
       const message = error instanceof Error ? error.message : "Unable to fetch chats.";
 
