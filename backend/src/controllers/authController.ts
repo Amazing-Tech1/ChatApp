@@ -6,7 +6,7 @@ import User from "../models/User.js";
 import { generateTokens } from "../lib/utils.js";
 import { sendWelcomeEmail } from "../emails/emailhandler.js";
 import "dotenv/config";
-import { uploadImage } from "../utils/imageUpload.js";
+import cloudinary from "../lib/cloudinary.js";
 
 interface SignUpBody {
   name: string;
@@ -253,37 +253,59 @@ export async function refreshToken(req: Request, res: Response): Promise<void> {
 
 export async function updateProfile(req: Request, res: Response): Promise<void> {
   try {
-    const { profilePic } = req.body;
-    if (!profilePic) {
-      res.status(400).json({
-        status: false,
-        message: "Profile Picture is required",
-      });
-    }
     if (!req.user) {
       res.status(401).json({
         status: false,
-        message: "Unauthorized user found!",
+        message: "Unauthorized.",
       });
       return;
     }
-    const userId = req.user._id;
-    const uploadImg = await uploadImage(profilePic, "avatar");
+
+    const file = req.file;
+
+    if (!file) {
+      res.status(400).json({
+        status: false,
+        message: "No image was uploaded!",
+      });
+      return;
+    }
+
+    const result = await cloudinary.uploader.upload(
+      `data:${file.mimetype};base64,${file.buffer.toString("base64")}`,
+      {
+        folder: "chatapp/avatars",
+        resource_type: "image",
+      },
+    );
+
+    const imageUrl = result.secure_url;
+
     const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { profilePic: uploadImg.secure_url },
-      { new: true },
-    ).select(["-password", "-refreshTokenId"]); // Exclude the password and refreshTokenId fields from the updated user object
+      req.user._id,
+      { image_url: imageUrl },
+      { new: true, runValidators: true },
+    ).select("-password -refreshTokenId");
+
+    if (!updatedUser) {
+      res.status(404).json({
+        status: false,
+        message: "User not found in MongoDB.",
+      });
+      return;
+    }
+
     res.status(200).json({
       status: true,
-      message: "Profile picture updated successfully",
+      message: "Profile picture updated successfully.",
       data: updatedUser,
     });
-  } catch (error) {
-    console.error("Error uploading profile picture:", error);
+  } catch (error: any) {
+    console.error("Failed to update profile", error);
+
     res.status(500).json({
       status: false,
-      message: "An error occurred while uploading the profile picture.",
+      message: "Internal Server error ",
     });
   }
 }

@@ -24,4 +24,5 @@ export interface AuthState {
   signUp: (data: SignUpData) => Promise<void>;
   login: (data: LoginData) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (data: FormData) => Promise<void>;
 }
