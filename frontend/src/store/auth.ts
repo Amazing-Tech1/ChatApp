@@ -1,34 +1,7 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import { toast } from "sonner";
-
-interface AuthUser {
-  _id: string;
-  email: string;
-  name: string;
-  image_url: string;
-}
-
-interface SignUpData {
-  name: string;
-  email: string;
-  password: string;
-}
-interface LoginData {
-  email: string;
-  password: string;
-}
-
-interface AuthState {
-  isLoading: boolean;
-  isSignUp: boolean;
-  isLogin: boolean;
-  authUser: AuthUser | null;
-  checkAuth: () => Promise<void>;
-  signUp: (data: SignUpData) => Promise<void>;
-  login: (data: LoginData) => Promise<void>;
-  logout: () => Promise<void>;
-}
+import type { AuthState, LoginData, SignUpData } from "../types";
 
 export const useAuthStore = create<AuthState>((set) => ({
   authUser: null,
