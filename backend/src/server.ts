@@ -4,12 +4,16 @@ import authRoutes from "./routes/auth.js";
 import msgRoutes from "./routes/msg.js";
 import path from "path";
 import connectDB from "./lib/db.js";
+import cors from "cors";
 import cookieParser from "cookie-parser";
 import { aj } from "./lib/arcjet.js";
+import { corsOptions } from "./utils/corsOption.js";
 
 const app = express();
 app.use(express.json({ limit: "5mb" }));
+app.use(cors(corsOptions));
 app.use(cookieParser());
+
 const __dirname = path.resolve();
 const PORT = Number(process.env.PORT) || 3000;
 

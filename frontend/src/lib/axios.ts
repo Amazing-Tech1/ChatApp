@@ -20,25 +20,35 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Prevent infinite retries.
-    if (originalRequest._retry) {
+    // Don't refresh repeatedly for the same request.
+    if (originalRequest._retry || originalRequest.url?.includes("/auth/refresh")) {
       return Promise.reject(error);
     }
 
     originalRequest._retry = true;
 
     try {
-      await axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+      // Refresh runs in the background without reloading the page.
+      await axios.post(`${BASE_URL}/auth/refresh-token`, {}, { withCredentials: true });
 
+      // Retry the original request with the updated cookie.
       return axiosInstance(originalRequest);
-    } catch {
-      try {
-        await axios.post(`${BASE_URL}/auth/logout`, {}, { withCredentials: true });
-      } finally {
-        window.location.assign("/");
-      }
+    } catch (refreshError) {
+      // Try to invalidate the session and clear cookies.
+      await axios
+        .post(
+          `${BASE_URL}/auth/logout`,
+          {},
+          {
+            withCredentials: true,
+          },
+        )
+        .catch(() => {});
 
-      return Promise.reject(error);
+      // Notify the app that authentication has expired.
+      window.dispatchEvent(new Event("auth:expired"));
+
+      return Promise.reject(refreshError);
     }
   },
 );
