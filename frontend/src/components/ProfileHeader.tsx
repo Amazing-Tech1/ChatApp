@@ -25,11 +25,6 @@ function ProfileHeader() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      e.target.value = "";
-      return;
-    }
-
     // Release the previous temporary preview URL.
     if (previewUrlRef.current) {
       URL.revokeObjectURL(previewUrlRef.current);
@@ -43,14 +38,7 @@ function ProfileHeader() {
     // Send the actual file to the backend.
     const formData = new FormData();
     formData.append("profilePic", file);
-
-    try {
-      await updateProfile(formData);
-    } catch (error) {
-      console.error("Profile picture upload failed:", error);
-    } finally {
-      e.target.value = "";
-    }
+    await updateProfile(formData);
   };
 
   return (
