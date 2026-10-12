@@ -6,7 +6,7 @@ import User from "../models/User.js";
 import { generateTokens } from "../lib/utils.js";
 import { sendWelcomeEmail } from "../emails/emailhandler.js";
 import "dotenv/config";
-import cloudinary from "../lib/cloudinary.js";
+import { uploadImage } from "../utils/imageUpload.js";
 
 interface SignUpBody {
   name: string;
@@ -268,7 +268,7 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
       return;
     }
     const userId = req.user._id;
-    const uploadImg = await cloudinary.uploader.upload(profilePic);
+    const uploadImg = await uploadImage(profilePic, "avatar");
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { profilePic: uploadImg.secure_url },

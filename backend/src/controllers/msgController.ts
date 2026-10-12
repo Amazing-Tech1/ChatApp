@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import User from "../models/User.js";
 import Message from "../models/Message.js";
-import cloudinary from "../lib/cloudinary.js";
+import { uploadImage } from "../utils/imageUpload.js";
 
 export async function getAllContacts(req: Request, res: Response): Promise<void> {
   if (!req.user) {
@@ -133,10 +133,9 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
     let imageUrl: string | undefined = undefined;
 
     if (image) {
-      const uploadedImage = await cloudinary.uploader.upload(image);
+      const uploadedImage = await uploadImage(image, "message");
       imageUrl = uploadedImage.secure_url;
     }
-
     const newMessage = new Message({
       senderId,
       receiverId: id,
