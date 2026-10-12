@@ -45,7 +45,7 @@ export async function getAllChats(req: Request, res: Response): Promise<void> {
     });
 
     const chatPartnersId = [
-      ...new Set( 
+      ...new Set(
         messages.map((msg) =>
           msg.senderId.toString() === userId.toString()
             ? msg.receiverId.toString()
@@ -85,8 +85,8 @@ export async function getChatWithUser(req: Request, res: Response): Promise<void
     const { id } = req.params;
     const otherUser = await Message.find({
       $or: [
-        { senderId: userId, recieverId: id },
-        { senderId: id, recieverId: userId },
+        { senderId: userId, receiverId: id },
+        { senderId: id, receiverId: userId },
       ],
     });
     res.status(200).json({
@@ -114,6 +114,22 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
       return;
     }
     const senderId = req.user._id;
+
+    if (!text && !image) {
+      res.status(400).json({ success: false, message: "Text or Image is required" });
+      return;
+    }
+    if (senderId.equals(id)) {
+      res.status(400).json({ success: false, message: "You cannot send message to yourself" });
+      return;
+    }
+
+    const receiverExists = await User.exists({ _id: id });
+    if (!receiverExists) {
+      res.status(404).json({ success: false, message: "Receiver not found!" });
+      return;
+    }
+
     let imageUrl: string | undefined = undefined;
 
     if (image) {
@@ -141,7 +157,6 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
     res.status(500).json({
       status: false,
       message: "Internal server error",
-      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 }
