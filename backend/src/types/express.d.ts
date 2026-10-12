@@ -7,6 +7,13 @@ export interface IUser {
   refreshTokenId?: string | null;
 }
 
+export interface IMessage {
+  senderId: Types.ObjectId;
+  receiverId: Types.ObjectId;
+  text?: string;
+  image?: string;
+}
+
 declare global {
   namespace Express {
     interface Request {

@@ -1,12 +1,19 @@
 import express, { Router } from "express";
+import { protectedRoute } from "../middleware/auth.js";
+import {
+  getAllContacts,
+  getChatWithUser,
+  sendMessage,
+  getAllChats,
+} from "../controllers/msgController.js";
 
 const router: Router = express.Router();
 
-router.get("/send", (req, res) => {
-  res.send("send message route");
-});
-router.get("/receive", (req, res) => {
-  res.send("receive message route");
-});
+router.use(protectedRoute);
+
+router.get("/contacts", getAllContacts);
+router.get("/chats", getAllChats);
+router.get("/chats/:id", getChatWithUser);
+router.post("/send/:id", sendMessage);
 
 export default router;

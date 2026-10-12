@@ -28,7 +28,7 @@ export const aj = arcjet({
 
     slidingWindow({
       mode: "LIVE",
-      max: 2,
+      max: 100,
       interval: 60, // 60 seconds
       // Tracked by IP address by default, but this can be customized
       // See https://docs.arcjet.com/fingerprints
