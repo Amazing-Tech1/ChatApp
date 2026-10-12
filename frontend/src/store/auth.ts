@@ -77,4 +77,24 @@ export const useAuthStore = create<AuthState>((set) => ({
       toast.error(error?.response?.data?.message || "Unable to log you out!");
     }
   },
+
+  updateProfile: async (data: FormData) => {
+    try {
+      const res = await axiosInstance.put("/auth/update-profile", data);
+
+      set({ authUser: res.data.data });
+
+      toast.success("Profile picture uploaded successfully!");
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "Unable to upload profile picture.";
+
+      console.error("Profile update request failed:", {
+        status: error?.response?.status,
+        message,
+      });
+
+      toast.error(message);
+      throw error;
+    }
+  },
 }));

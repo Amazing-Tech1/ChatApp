@@ -57,7 +57,7 @@ function App() {
         />
 
         {/* App pages */}
-        <div className="relative z-10 w-full">
+        <div className="relative z-10 flex w-full items-center justify-center">
           <Routes>
             <Route path="/" element={authUser ? <ChatPage /> : <Navigate to={"/login"} />} />
             <Route path="/signup" element={!authUser ? <SignUp /> : <Navigate to={"/"} />} />
