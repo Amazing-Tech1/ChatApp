@@ -19,6 +19,7 @@ interface ChatState {
   setSelectedUser: (user: AuthUser | null) => void;
   getAllContacts: () => Promise<void>;
   getAllChatPartners: () => Promise<void>;
+  getMessagesById: (id: string) => Promise<void>;
 }
 
 // Replace this interface with your existing Message type if you already have one.
@@ -28,7 +29,7 @@ interface Message {
   receiverId: string;
   text?: string;
   image?: string;
-  createdAt?: string;
+  createdAt: string;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -60,7 +61,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const res = await axiosInstance.get("/messages/contacts");
       set({ allContacts: res.data.users });
     } catch (error: any) {
-      const message = error instanceof Error ? error.message : "Unable to fetch contacts.";
+      const message = error.response?.data?.message || "Unable to fetch contacts.";
 
       toast.error(message);
       console.error("Fetch contacts failed:", error);
@@ -76,12 +77,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const res = await axiosInstance.get("/messages/chats");
       set({ chats: res.data.chats });
     } catch (error: any) {
-      const message = error instanceof Error ? error.message : "Unable to fetch chats.";
+      const message = error.response?.data?.message || "Unable to fetch chats.";
 
       toast.error(message);
       console.error("Fetch chats failed:", error);
     } finally {
       set({ isUserLoading: false });
+    }
+  },
+
+  getMessagesById: async (id: string) => {
+    set({ isMessageLoading: true });
+
+    try {
+      const res = await axiosInstance.get(`/messages/chats/${id}`);
+      set({ messages: res.data.user });
+    } catch (error: any) {
+      const message = error.response?.data?.message || "Unable to fetch messages!.";
+
+      toast.error(message);
+      console.error("Fetch chats failed:", error);
+    } finally {
+      set({ isMessageLoading: false });
     }
   },
 }));
