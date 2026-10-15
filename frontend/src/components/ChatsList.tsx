@@ -3,11 +3,12 @@ import { useChatStore } from "../store/chat";
 import { useAuthStore } from "../store/auth";
 import UsersLoadingSkeleton from "./UserLoadingSkeleton";
 import NoChatsFound from "./NoChatsFound";
+import { useSearchParams } from "react-router";
 
 function ChatsList() {
   const { getAllChatPartners, chats, isUserLoading, setSelectedUser } = useChatStore();
   // const { onlineUsers } = useAuthStore();
-
+  const [, setSearchParams] = useSearchParams();
   useEffect(() => {
     getAllChatPartners();
   }, [getAllChatPartners]);
@@ -21,7 +22,10 @@ function ChatsList() {
         <div
           key={chat._id}
           className="bg-cyan-500/10 p-4 rounded-lg cursor-pointer hover:bg-cyan-500/20 transition-colors"
-          onClick={() => setSelectedUser(chat)}
+          onClick={() => {
+            setSelectedUser(chat);
+            setSearchParams({ user: chat._id });
+          }}
         >
           <div className="flex items-center gap-3">
             {/* <div className={`avatar ${onlineUsers.includes(chat._id) ? "online" : "offline"}`}> */}

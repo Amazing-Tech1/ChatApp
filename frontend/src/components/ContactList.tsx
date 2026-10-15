@@ -2,10 +2,12 @@ import { useEffect } from "react";
 import { useChatStore } from "../store/chat";
 import { useAuthStore } from "../store/auth";
 import UsersLoadingSkeleton from "./UserLoadingSkeleton";
+import { useSearchParams } from "react-router";
 
 function ContactList() {
   const { getAllContacts, allContacts, setSelectedUser, isUserLoading } = useChatStore();
   // const { onlineUsers } = useAuthStore();
+  const [, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     getAllContacts();
@@ -19,7 +21,10 @@ function ContactList() {
         <div
           key={contact._id}
           className="bg-cyan-500/10 p-4 rounded-lg cursor-pointer hover:bg-cyan-500/20 transition-colors"
-          onClick={() => setSelectedUser(contact)}
+          onClick={() => {
+            setSelectedUser(contact);
+            setSearchParams({ user: contact._id });
+          }}
         >
           <div className="flex items-center gap-3">
             {/* <div className={`avatar ${onlineUsers.includes(contact._id) ? "online" : "offline"}`}> */}

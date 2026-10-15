@@ -21,7 +21,7 @@ function App() {
   return (
     <>
       <Toaster position="top-right" richColors />
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 p-4 transition-colors duration-500 dark:bg-[#071426]">
+      <div className="relative flex h-dvh w-full items-center justify-center overflow-hidden bg-slate-50 p-3 transition-colors duration-500 dark:bg-[#071426]">
         {/* Subtle blue grid */}
         <div
           aria-hidden="true"
@@ -57,7 +57,7 @@ function App() {
         />
 
         {/* App pages */}
-        <div className="relative z-10 flex w-full items-center justify-center">
+        <div className="relative z-10 flex h-full min-h-0 w-full items-center justify-center">
           <Routes>
             <Route path="/" element={authUser ? <ChatPage /> : <Navigate to={"/login"} />} />
             <Route path="/signup" element={!authUser ? <SignUp /> : <Navigate to={"/"} />} />
