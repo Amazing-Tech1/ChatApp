@@ -46,11 +46,14 @@ export async function getAllChats(req: Request, res: Response): Promise<void> {
 
     const chatPartnersId = [
       ...new Set(
-        messages.map((msg) =>
-          msg.senderId.toString() === userId.toString()
-            ? msg.receiverId.toString()
-            : msg.senderId.toString(),
-        ),
+        messages
+          .filter((msg) => msg.senderId.toString() !== msg.receiverId.toString())
+          .map((msg) =>
+            msg.senderId.toString() === userId.toString()
+              ? msg.receiverId.toString()
+              : msg.senderId.toString(),
+          )
+          .filter((id) => id !== userId.toString()),
       ),
     ];
 
