@@ -61,7 +61,16 @@ app.use(async (req, res, next) => {
     next();
   } catch (error) {
     console.error("Arcjet error:", error);
-    next(error);
+
+    if (process.env.NODE_ENV === "production") {
+      res.status(503).json({
+        status: false,
+        message: "Security service temporarily unavailable. Please try again.",
+      });
+      return;
+    }
+
+    next();
   }
 });
 
