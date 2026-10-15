@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import { toast } from "sonner";
 import type { AuthUser } from "../types";
+import { useAuthStore } from "./auth";
 
 interface ChatState {
   isUserLoading: boolean;
@@ -20,6 +21,7 @@ interface ChatState {
   getAllContacts: () => Promise<void>;
   getAllChatPartners: () => Promise<void>;
   getMessagesById: (id: string) => Promise<void>;
+  sendMessage: (messageData: { text: string; image: File | null }) => Promise<boolean>;
 }
 
 // Replace this interface with your existing Message type if you already have one.
@@ -99,6 +101,51 @@ export const useChatStore = create<ChatState>((set, get) => ({
       console.error("Fetch chats failed:", error);
     } finally {
       set({ isMessageLoading: false });
+    }
+  },
+  sendMessage: async (messageData: { text: string; image: File | null }) => {
+    const { selectedUser, messages } = get();
+    const { authUser } = useAuthStore.getState();
+
+    if (!authUser?._id || !selectedUser?._id) {
+      return false;
+    }
+
+    const tempId = `temp-${Date.now()}`;
+
+    const optimisticMessage: Message & { isOptimistic: boolean } = {
+      _id: tempId,
+      senderId: authUser._id,
+      receiverId: selectedUser._id,
+      text: messageData.text,
+      image: messageData.image ? URL.createObjectURL(messageData.image) : undefined,
+      createdAt: new Date().toISOString(),
+      isOptimistic: true,
+    };
+
+    set({ messages: [...messages, optimisticMessage] });
+
+    try {
+      const formData = new FormData();
+
+      formData.append("text", messageData.text);
+
+      if (messageData.image) {
+        formData.append("image", messageData.image);
+      }
+
+      const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, formData);
+
+      set({ messages: messages.concat(res.data.data) });
+      return true;
+    } catch (error: any) {
+      set({ messages: messages });
+      const message = error.response?.data?.message || "Unable to send message.";
+
+      toast.error(message);
+      console.error("Send message failed:", error);
+
+      return false;
     }
   },
 }));
