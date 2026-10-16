@@ -8,8 +8,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { aj } from "./lib/arcjet.js";
 import { corsOptions } from "./utils/corsOption.js";
+import { app, server } from "./lib/socket.js";
 
-const app = express();
 app.use(express.json({ limit: "6mb" }));
 app.use(cors(corsOptions));
 app.use(cookieParser());
@@ -84,7 +84,7 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
   });
 }
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   connectDB();
   console.log(`server running on ${PORT}`);
 });
