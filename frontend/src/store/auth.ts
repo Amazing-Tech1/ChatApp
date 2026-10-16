@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import type { AuthState, LoginData, SignUpData } from "../types";
 import { io } from "socket.io-client";
 
+let isRefreshingSocket = false;
+
 const BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3000" : "/";
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -112,6 +114,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (!authUser || socket?.connected) return;
 
+    // Avoid creating another socket if one is already connecting.
+    if (socket?.active) return;
+
     const newSocket = io(BASE_URL, {
       withCredentials: true,
       autoConnect: false,
@@ -121,8 +126,42 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log("Socket connected:", newSocket.id);
     });
 
-    newSocket.on("connect_error", (error) => {
+    newSocket.on("connect_error", async (error) => {
       console.error("Socket connection failed:", error.message);
+
+      // Only attempt refresh for authentication failures.
+      const isAuthError = /unauthorized|authentication|token expired|jwt expired/i.test(
+        error.message,
+      );
+
+      if (!isAuthError || isRefreshingSocket) return;
+
+      isRefreshingSocket = true;
+
+      try {
+        // Refresh the access-token cookie using your existing endpoint.
+        await axiosInstance.post("/auth/refresh-token");
+
+        // Retry the socket handshake with the refreshed cookie.
+        if (get().authUser && !newSocket.connected) {
+          newSocket.connect();
+        }
+      } catch (refreshError) {
+        console.error("Socket token refresh failed:", refreshError);
+
+        newSocket.disconnect();
+
+        set({
+          socket: null,
+          onlineUsers: [],
+          authUser: null,
+        });
+
+        // Let your app handle the expired session.
+        window.dispatchEvent(new Event("auth:expired"));
+      } finally {
+        isRefreshingSocket = false;
+      }
     });
 
     newSocket.on("getOnlineUsers", (userIds: string[]) => {
