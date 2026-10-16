@@ -12,8 +12,7 @@ import { useEffect } from "react";
 function ChatPage() {
   const { activeTab, selectedUser, chats, setSelectedUser } = useChatStore();
 
-  const [searchParams, setSearchParams] = useSearchParams();
-
+  const [searchParams] = useSearchParams();
   const userId = searchParams.get("user");
 
   useEffect(() => {
@@ -33,18 +32,30 @@ function ChatPage() {
     <div className="relative h-full min-h-0 w-full max-w-6xl">
       <BorderAnimatedContainer>
         {/* LEFT SIDEBAR */}
-        <div className="flex min-h-0 w-80 shrink-0 flex-col overflow-hidden bg-slate-800/50 backdrop-blur-sm">
+        <div
+          className={`
+            min-h-0 shrink-0 flex-col overflow-hidden
+            bg-slate-800/50 backdrop-blur-sm
+            ${selectedUser ? "hidden md:flex md:w-72 lg:w-80" : "flex w-full md:w-72 lg:w-80"}
+          `}
+        >
           <ProfileHeader />
           <ActiveTabSwitch />
 
           {/* Only the chats/contacts list scrolls */}
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 space-y-2">
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-3 sm:p-4">
             {activeTab === "chats" ? <ChatsList /> : <ContactList />}
           </div>
         </div>
 
         {/* RIGHT CHAT ROOM */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-slate-900/50 backdrop-blur-sm">
+        <div
+          className={`
+            min-h-0 min-w-0 flex-1 flex-col overflow-hidden
+            bg-slate-900/50 backdrop-blur-sm
+            ${selectedUser ? "flex w-full" : "hidden md:flex"}
+          `}
+        >
           {selectedUser ? <ChatContainer /> : <NoConversationPlaceholder />}
         </div>
       </BorderAnimatedContainer>
