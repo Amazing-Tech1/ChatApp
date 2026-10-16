@@ -1,38 +1,10 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import { toast } from "sonner";
-import type { AuthUser } from "../types";
+import type { Message, ChatState } from "../types";
 import { useAuthStore } from "./auth";
 
-interface ChatState {
-  isUserLoading: boolean;
-  isMessageLoading: boolean;
-  isSoundEnabled: boolean;
-
-  allContacts: AuthUser[];
-  chats: AuthUser[];
-  messages: Message[];
-  activeTab: "chats" | "contacts";
-  selectedUser: AuthUser | null;
-
-  toggleSound: () => void;
-  setActiveTab: (tab: "chats" | "contacts") => void;
-  setSelectedUser: (user: AuthUser | null) => void;
-  getAllContacts: () => Promise<void>;
-  getAllChatPartners: () => Promise<void>;
-  getMessagesById: (id: string) => Promise<void>;
-  sendMessage: (messageData: { text: string; image: File | null }) => Promise<boolean>;
-}
-
-// Replace this interface with your existing Message type if you already have one.
-interface Message {
-  _id: string;
-  senderId: string;
-  receiverId: string;
-  text?: string;
-  image?: string;
-  createdAt: string;
-}
+const notificationSound = new Audio("/sounds/notification.mp3");
 
 export const useChatStore = create<ChatState>((set, get) => ({
   allContacts: [],
@@ -147,5 +119,30 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       return false;
     }
+  },
+
+  subscribeToMessages: () => {
+    const { selectedUser, isSoundEnabled } = get();
+
+    if (!selectedUser) return;
+
+    const socket = useAuthStore.getState().socket;
+
+    socket?.on("newMessage", (newMessage) => {
+      const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser._id;
+      if (!isMessageSentFromSelectedUser) return;
+
+      const currentMessage = get().messages;
+      set({ messages: [...currentMessage, newMessage] });
+
+      if (isSoundEnabled) {
+        notificationSound.currentTime = 0;
+        notificationSound.play().catch((e: any) => console.log("Audio play failed", e));
+      }
+    });
+  },
+  unSubscribeFromMessages: () => {
+    const socket = useAuthStore.getState().socket;
+    socket?.off("newMessage");
   },
 }));

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import User from "../models/User.js";
 import Message from "../models/Message.js";
 import cloudinary from "../lib/cloudinary.js";
+import { getRecieverSocketId, io } from "../lib/socket.js";
 
 export async function getAllContacts(req: Request, res: Response): Promise<void> {
   if (!req.user) {
@@ -118,6 +119,15 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    // Validate receiver ID before using it.
+    if (typeof id !== "string" || !id.trim()) {
+      res.status(400).json({
+        status: false,
+        message: "Invalid receiver ID.",
+      });
+      return;
+    }
+
     const senderId = req.user._id;
     const file = req.file;
 
@@ -170,6 +180,10 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
 
     await newMessage.save();
 
+    const recieverSocketId = getRecieverSocketId(id);
+    if (recieverSocketId) {
+      io.to(recieverSocketId).emit("newMessage", newMessage);
+    }
     res.status(201).json({
       status: true,
       data: newMessage,

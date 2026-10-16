@@ -14,6 +14,10 @@ const io = new Server(server, {
 
 io.use(socketAuthMiddleware);
 
+export function getRecieverSocketId(userId: string) {
+  return userSocketMap[userId];
+}
+
 // Map each user ID to their connected socket ID(s)
 const userSocketMap: Record<string, string> = {};
 
